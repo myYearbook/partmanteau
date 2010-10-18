@@ -142,10 +142,10 @@ Partitioning Framework
  4. Define a *create_partition* function for the partitioned table
  that takes into account the partitioning strategy.
  This function should include:
-   * the partitioning constraint (used in constraint exclusion)
-   and any other table constraints.
-   * foreign key constraints and any additional commands necessary
-   to support the database schema.
+  * the partitioning constraint (used in constraint exclusion)
+  and any other table constraints.
+  * foreign key constraints and any additional commands necessary
+  to support the database schema.
 
  5. Define a *partition* function that is used to insert data into the
  appropriate table. Depending on the implementation, this function can be
