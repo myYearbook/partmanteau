@@ -1,0 +1,120 @@
+@db = {}
+@db[:host] = ENV['PGTAP_HOST'] || ENV['PGHOST']
+@db[:port] = ENV['PGTAP_PORT'] || ENV['PGPORT']
+@db[:user] = ENV['PGTAP_USER'] || ENV['PGUSER']
+@db[:name] = ENV['PGTAP_DBNAME']
+@db[:test_user] = ENV['PGTAP_TEST_USER'] || 'postgres'
+
+@test_schema = 'partmanteau'
+
+PSQL = 'psql'
+def psql(options={})
+  defaults = {
+    :dbname => @db[:name],
+    :user => @db[:user],
+    :port => @db[:port],
+    :host => @db[:host] }
+  options = defaults.merge(options)
+  opts = %w( -qtAX
+             --set ON_ERROR_ROLLBACK=1
+             --set ON_ERROR_STOP=1 )
+  opt_string = opts.join " "
+  cmd = %(#{PSQL} #{opt_string})
+  { :host => '-h',
+    :port => '-p',
+    :user => '-U',
+    :dbname => '-d',
+    :file => '-f',
+    :command => '-c'
+  }.each do |k,v|
+    if options[k]
+      opt = options[k].gsub('"', '\"')
+      cmd << %( #{v} "#{opt}")
+    end
+  end
+  sh cmd
+end
+
+EXCLUDED_SQL_REGEXP = /^xxx_/
+def load_sql(dir)
+  chdir(dir) do
+    FileList['[0123456789]*.sql'].sort.each do |sql|
+      verbose(true) do
+        psql({ :file => sql }) unless EXCLUDED_SQL_REGEXP.match(sql)
+      end
+    end
+  end
+end
+
+def run_tests(do_drop=true)
+  psql :command => %(CREATE DATABASE "#{@db[:name]}" WITH ENCODING 'UTF8'), :dbname => 'postgres'
+  priv_dirs = []
+  begin
+    verbose(false) do
+      load_sql File.join(File.dirname(__FILE__), 'test', 'schema')
+      psql :file => 'partmanteau.sql'
+      load_sql File.join(File.dirname(__FILE__))
+      %w(lib fixtures).each do |d|
+        load_sql File.join(File.dirname(__FILE__), 'test', d)
+      end
+      test_dir = File.join(File.dirname(__FILE__), 'test', 'tests')
+      load_sql test_dir
+      priv_dirs = Dir["#{test_dir}/*/"].map { |a| File.basename(a) }
+      priv_dirs.each do |dir|
+        load_sql File.join(File.dirname(__FILE__), 'test', 'tests', dir)
+      end
+    end
+    # do basic tests
+    psql({ :user => @db[:test_user],
+           :command => %(SET search_path TO pgtap, public; SELECT * FROM pgtap.runtests('#{@test_schema}', '^test_');) })
+    # do tests with specific users
+    priv_dirs.each do |dir|
+      psql({ :user => dir,
+             :command => %(SET search_path TO pgtap, public; SELECT * FROM pgtap.runtests('#{@test_schema}', '^#{dir}_test_');) })
+    end
+  rescue
+  ensure
+    drop_test_database if do_drop
+  end
+end
+
+def run_tests_no_drop
+  run_tests(false)
+end
+
+def run_remote_tests
+  chdir('test/remote') do
+    sh %(./test.sh &> results/remote.out)
+    sh %(diff expected/remote.out results/remote.out > results/remote.diff) do |ok, res|
+      if ! ok
+        puts 'remote test FAILED. results differ from expected. See test/remote/results/remote.diff for details'
+      else
+        puts 'remote test PASSED.'
+      end
+    end
+  end
+end
+
+desc "Run tests, but don't drop test database"
+task :test_no_drop do
+  run_tests_no_drop
+end
+
+desc "Run tests"
+task :test do
+  run_tests
+end
+
+desc 'Drop test db'
+task :dropdb do
+  drop_test_database
+end
+
+def drop_test_database
+  psql :command => %(DROP DATABASE "#{@db[:name]}"), :dbname => 'postgres'
+end
+
+desc 'Run remote tests'
+task :test_remote do
+  run_remote_tests
+end
