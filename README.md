@@ -171,6 +171,8 @@ provide temperature readings over time. This example is pulled from a
 hobby project of mine to track home electricity usage using a
 [Current Cost](http://www.currentcost.net/) Envi unit.
 
+    CREATE SCHEMA current_cost;
+
     CREATE TABLE current_cost.monitors
     (
       monitor_id UUID PRIMARY KEY,
@@ -305,15 +307,15 @@ partmanteau doesn't preclude such a solution. Some clever soul will figure it ou
 
 I also define a number of constants and variables:
 
-  * `k_schema_name`
-  * `k_base_table_name`
-  * `k_partition_column`
-  * `v_commands`
-  * `v_partition_name`
-  * `v_qualified_partition_name`
-  * `k_width`, `v_lower_bound`, and `v_upper_bound`
-  * `v_partition_constraint`
-  * `v_additional_commands`
+ * `k_schema_name`
+ * `k_base_table_name`
+ * `k_partition_column`
+ * `v_commands`
+ * `v_partition_name`
+ * `v_qualified_partition_name`
+ * `k_width`, `v_lower_bound`, and `v_upper_bound`
+ * `v_partition_constraint`
+ * `v_additional_commands`
 
 I find that factoring out the literals in this way makes the logic of the
 function easier to see. Having implemented many partition strategies using this
