@@ -11,16 +11,16 @@ Background
 There are many different ways to partition a table: range, list, and hash are
 three common ones. Each of these ways in turn has different tactics:
 
-  * What is the type of the column in the range partition?
-    Is it a timestamp, an integer, or some other type?
-  * What hashing function is used to partition values? Which columns are arguments
-    to the hashing function?
-  * What columns contribute to the list items? How do the partitions correspond
-    to the list items? Is it one-to-one or are some list items included in the
-    same partition?
-  * How often are partitions added? Timestamp-ranged partitions often add new
-    partitions on a regular schedule. List partitions often have a fixed number
-    of partitions corresponding to the list items and rarely changes.
+ * What is the type of the column in the range partition?
+   Is it a timestamp, an integer, or some other type?
+ * What hashing function is used to partition values? Which columns are arguments
+   to the hashing function?
+ * What columns contribute to the list items? How do the partitions correspond
+   to the list items? Is it one-to-one or are some list items included in the
+   same partition?
+ * How often are partitions added? Timestamp-ranged partitions often add new
+   partitions on a regular schedule. List partitions often have a fixed number
+   of partitions corresponding to the list items and rarely changes.
 
 More complex partitioning strategies can be implemented by combining different
 tactics: partition the table by list and then partition each of list item
